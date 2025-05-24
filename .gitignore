@@ -1,18 +1,4 @@
-# Byte-compiled / cache
-__pycache__/
-*.py[cod]
-
-# Environment
+# Environment and Config Vairables
 .env
-
-# Data files
-data/*.csv
-*.csv
-
-# Logs and system
-*.log
-.DS_Store
-
-# IDE folders
-.vscode/
-.idea/
+test.py
+pyvenv.cfg
