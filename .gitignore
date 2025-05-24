@@ -1,0 +1,18 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Environment
+.env
+
+# Data files
+data/*.csv
+*.csv
+
+# Logs and system
+*.log
+.DS_Store
+
+# IDE folders
+.vscode/
+.idea/
