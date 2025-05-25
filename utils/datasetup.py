@@ -153,3 +153,10 @@ class AzureDB:
             except Exception as e:
                 trans.rollback()
                 print(f"Error deleting table: {e}")
+                
+    def get_sql_table(self, query):
+        
+        df = pd.read_sql_query(query, engine)
+        result = df.todict(orient='records')
+        
+        return result

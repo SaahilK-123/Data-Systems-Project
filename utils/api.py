@@ -116,7 +116,7 @@ def check_user_role(role: str):
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
-    # response = add_cors_headers(response)   
+    response = add_cors_headers(response)   
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -137,7 +137,7 @@ async def home():
     return {"message": "Cryptocurrency ETL API"}
 
 @app.get("/data/employee")
-async def crypto_summary(current_user: User = Depends(get_current_user)):
+async def crypto_summary(response: Response, current_user: User = Depends(get_current_user)):
     
     response = add_cors_headers(response) 
     id = current_user.id
@@ -149,7 +149,7 @@ async def crypto_summary(current_user: User = Depends(get_current_user)):
     return json.dumps(database.get_sql_table(employee_overview_data))
 
 @app.get("/data/manager")
-async def market_overview(current_user: User = Depends(check_user_role("manager"))):
+async def market_overview(response: Response, current_user: User = Depends(check_user_role("manager"))):
     response = add_cors_headers(response) 
     id = current_user.id    
     manager_overview_data = f'''
