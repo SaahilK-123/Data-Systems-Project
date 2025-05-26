@@ -199,17 +199,17 @@ def display_employee_data(data):
             fig = px.bar(price_diff_df, 
                          x='Crypto', 
                          y='Avg_Price_Differential', 
-                         color='Avg_Change_Pct',
+                         color='Avg_Percent_Change',
                          title='Avg Price Differential vs Change % per Token',
-                         labels={'Avg_Change_Pct': 'Avg % Change'})
+                         labels={'Avg_Percent_Change': 'Avg % Change'})
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
             # Pie chart for volume traded
             fig = px.pie(volume_df, 
-                         values='Total_Diff', 
+                         values='Avg_Monthly_Volume', 
                          names='Crypto', 
-                         title='Total Price Differential by Token')
+                         title='Total Volume by Token')
             st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:

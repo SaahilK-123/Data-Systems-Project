@@ -138,55 +138,62 @@ async def home():
 
 @app.get("/data/employee")
 async def crypto_summary(response: Response, current_user: User = Depends(get_current_user)):
-    
-    response = add_cors_headers(response) 
+    response = add_cors_headers(response)
     id = current_user.id
-    query1 = f'''
-        SELECT [ISO_Stdised_Key (PK)] AS Crypto,
-            ROUND(AVG(Price_Differential), 2) AS Avg_Price_Differential,
-            ROUND(AVG(Change_pct), 4) AS Avg_Percent_Change
-        FROM [dbo].[Crypto_Fact]
-        GROUP BY [ISO_Stdised_Key (PK)]
+
+    query1 = '''
+        SELECT CD.[ISO_Stdised_Key (PK)] AS Crypto,
+               ROUND(AVG(PD.Price_Differential), 2) AS Avg_Price_Differential,
+               ROUND(AVG(CF.Change_pct), 4) AS Avg_Percent_Change
+        FROM [dbo].[Crypto_Fact] CF
+        JOIN [dbo].[Crypto_dim] CD ON CF.Crypto_id = CD.Crypto_id
+        JOIN [dbo].[PriceDifferential_dim] PD ON CF.PriceDifferential_id = PD.PriceDifferential_id
+        GROUP BY CD.[ISO_Stdised_Key (PK)]
         ORDER BY Avg_Percent_Change DESC;
     '''
-    
-    query2 = f'''
-        SELECT cf.[ISO_Stdised_Key (PK)] AS Crypto,
-            dd.Month_Date,
-            ROUND(SUM(cf.Volume_Traded), 0) AS Monthly_Volume
-        FROM [dbo].[Crypto_Fact] cf
-        JOIN [dbo].[Date_dim] dd ON cf.Date_ID = dd.Date_ID
-        GROUP BY cf.[ISO_Stdised_Key (PK)], dd.Month_Date
-        ORDER BY Crypto, dd.Month_Date;
+
+    query2 = '''
+        SELECT CD.[ISO_Stdised_Key (PK)] AS Crypto,
+               DD.Month_Date,
+               ROUND(AVG(CD.Volume_Traded), 0) AS Avg_Monthly_Volume
+        FROM [dbo].[Crypto_Fact] CF
+        JOIN [dbo].[Date_dim] DD ON CF.Date_ID = DD.Date_ID
+        JOIN [dbo].[Crypto_dim] CD ON CF.Crypto_id = CD.Crypto_id
+        GROUP BY CD.[ISO_Stdised_Key (PK)], DD.Month_Date
+        ORDER BY CD.[ISO_Stdised_Key (PK)], DD.Month_Date;
     '''
-    
+
     queries = [query1, query2]
-    
     return json.dumps([database.get_sql_table(q) for q in queries])
+
 
 @app.get("/data/manager")
 async def market_overview(response: Response, current_user: User = Depends(check_user_role("manager"))):
-    response = add_cors_headers(response) 
-    id = current_user.id    
-    query3 = f'''
-        SELECT [ISO_Stdised_Key (PK)] AS Crypto,
-            ROUND(AVG(Price_variation), 2) AS Avg_Variation,
-            COUNT(*) AS Entry_Count
-        FROM [dbo].[Crypto_Fact]
-        GROUP BY [ISO_Stdised_Key (PK)]
+    response = add_cors_headers(response)
+    id = current_user.id
+
+    query3 = '''
+        SELECT CD.[ISO_Stdised_Key (PK)] AS Crypto,
+               ROUND(AVG(PV.Price_Variation), 2) AS Avg_Variation,
+               COUNT(*) AS Entry_Count
+        FROM [dbo].[Crypto_Fact] CF
+        JOIN [dbo].[PriceVariations_dim] PV ON CF.PriceVariations_id = PV.PriceVariations_id
+        JOIN [dbo].[Crypto_dim] CD ON CF.Crypto_id = CD.Crypto_id
+        GROUP BY CD.[ISO_Stdised_Key (PK)]
         ORDER BY Avg_Variation DESC;
     '''
-    
-    query4 = f'''
-        SELECT Price_Variation_Type,
-            COUNT(*) AS Frequency
-        FROM [dbo].[Crypto_Fact]
-        GROUP BY Price_Variation_Type;
+
+    query4 = '''
+        SELECT PV.Price_Variation_Type,
+               COUNT(*) AS Frequency
+        FROM [dbo].[Crypto_Fact] CF
+        JOIN [dbo].[PriceVariations_dim] PV ON CF.PriceVariations_id = PV.PriceVariations_id
+        GROUP BY PV.Price_Variation_Type;
     '''
-    
+
     queries = [query3, query4]
-    
     return json.dumps([database.get_sql_table(q) for q in queries])
+
     
 # Running the app with Uvicorn
 if __name__ == "__main__":
