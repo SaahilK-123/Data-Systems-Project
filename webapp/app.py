@@ -130,57 +130,32 @@ def display_manager_data(data):
         parsed_data = data if isinstance(data, list) else json.loads(data)
 
         # Extract the separate data components
-        crypto_grouped = parsed_data[0]
-        total_summary = parsed_data[1]
+        price_variation = parsed_data[0]
+        type_freq = parsed_data[1]
 
         # Convert to DataFrames
-        crypto_df = pd.DataFrame(crypto_grouped)
-        total_df = pd.DataFrame(total_summary)
+        variation_df = pd.DataFrame(price_variation)
+        type_freq_df = pd.DataFrame(type_freq)
 
         # Create two columns for visualizations
-        col1, col2 = st.columns([8, 4])
+        col1, col2 = st.columns([7, 5])
 
         with col1:
             # Bar chart for price breakdown
-            fig_bar = go.Figure()
-
-            fig_bar.add_trace(go.Bar(
-                x=crypto_df['Crypto_Key'],
-                y=crypto_df['Open_Price'],
-                name='Open Price',
-                marker_color='#f2cbae'
-            ))
-            fig_bar.add_trace(go.Bar(
-                x=crypto_df['Crypto_Key'],
-                y=crypto_df['High_Price'],
-                name='High Price',
-                marker_color='#ebb4d3'
-            ))
-            fig_bar.add_trace(go.Bar(
-                x=crypto_df['Crypto_Key'],
-                y=crypto_df['Low_Price'],
-                name='Low Price',
-                marker_color='#2b2a65'
-            ))
-
-            fig_bar.update_layout(
-                title='Crypto Price Breakdown by Token',
-                barmode='group',
-                xaxis_title='Cryptocurrency',
-                yaxis_title='Price (USD)'
-            )
-
-            st.plotly_chart(fig_bar, use_container_width=True)
+            fig = px.bar(variation_df, 
+                         x='Crypto', 
+                         y='Avg_Variation', 
+                         color='Entry_Count',
+                         title='Average Price Variation per Crypto Token')
+            st.plotly_chart(fig, use_container_width=True)
 
         with col2:
             # Pie chart for total volume traded
-            fig_pie = px.pie(
-                total_df,
-                values='Volume_Traded',
-                names='Crypto_Key',
-                title='Volume Traded by Token'
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
+            fig = px.pie(type_freq_df, 
+                         values='Frequency', 
+                         names='Price_Variation_Type',
+                         title='Distribution of Price Variation Types')
+            st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"Error displaying crypto manager data: {str(e)}")
@@ -194,66 +169,48 @@ def display_employee_data(data):
         parsed_data = data if isinstance(data, list) else json.loads(data)
 
         # Extract the separate data components
-        monthly_data = parsed_data[0]
-        volume_summary = parsed_data[1]
+        price_diff_data = parsed_data[0]
+        volume_data = parsed_data[1]
 
         # Convert to DataFrames
-        monthly_df = pd.DataFrame(monthly_data)
-        total_df = pd.DataFrame(volume_summary)
+        price_diff_df = pd.DataFrame(price_diff_data)
+        volume_df = pd.DataFrame(volume_data)
+        
+        if price_diff_df.empty or volume_df.empty:
+            st.warning("No cryptocurrency data available for this user.")
+            st.write("Raw API data:", data)
+            return
 
-        # Define the month order
-        month_order = {
-            'January': 1, 'February': 2, 'March': 3, 'April': 4,
-            'May': 5, 'June': 6, 'July': 7, 'August': 8,
-            'September': 9, 'October': 10, 'November': 11, 'December': 12
-        }
+        # # Define the month order
+        # month_order = {
+        #     'January': 1, 'February': 2, 'March': 3, 'April': 4,
+        #     'May': 5, 'June': 6, 'July': 7, 'August': 8,
+        #     'September': 9, 'October': 10, 'November': 11, 'December': 12
+        # }
 
-        monthly_df['month_num'] = monthly_df['date'].map(month_order)
-        monthly_df = monthly_df.sort_values('month_num')
+        # monthly_df['month_num'] = monthly_df['Month_Date'].map(month_order)
+        # monthly_df = monthly_df.sort_values('month_num')
 
         # Create two columns for visualizations
-        col1, col2 = st.columns([8, 4])
+        col1, col2 = st.columns([7, 5])
 
         with col1:
             # Bar chart for price variation
-            fig_bar = go.Figure()
-            fig_bar.add_trace(go.Bar(
-                x=monthly_df['date'],
-                y=monthly_df['Open_Price'],
-                name='Open Price',
-                marker_color='#f2cbae'
-            ))
-            fig_bar.add_trace(go.Bar(
-                x=monthly_df['date'],
-                y=monthly_df['High_Price'],
-                name='High Price',
-                marker_color='#ebb4d3'
-            ))
-            fig_bar.add_trace(go.Bar(
-                x=monthly_df['date'],
-                y=monthly_df['Low_Price'],
-                name='Low Price',
-                marker_color='#2b2a65'
-            ))
-
-            fig_bar.update_layout(
-                title='Monthly Crypto Price Breakdown',
-                barmode='group',
-                xaxis_title='Month',
-                yaxis_title='Price (USD)'
-            )
-
-            st.plotly_chart(fig_bar, use_container_width=True)
+            fig = px.bar(price_diff_df, 
+                         x='Crypto', 
+                         y='Avg_Price_Differential', 
+                         color='Avg_Change_Pct',
+                         title='Avg Price Differential vs Change % per Token',
+                         labels={'Avg_Change_Pct': 'Avg % Change'})
+            st.plotly_chart(fig, use_container_width=True)
 
         with col2:
             # Pie chart for volume traded
-            fig_pie = px.pie(
-                total_df,
-                values='Volume_Traded',
-                names='date',
-                title='Volume Traded per Month'
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
+            fig = px.pie(volume_df, 
+                         values='Total_Diff', 
+                         names='Crypto', 
+                         title='Total Price Differential by Token')
+            st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"Error displaying crypto employee data: {str(e)}")

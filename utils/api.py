@@ -141,25 +141,52 @@ async def crypto_summary(response: Response, current_user: User = Depends(get_cu
     
     response = add_cors_headers(response) 
     id = current_user.id
-    employee_overview_data = f'''
-        SELECT [ISO_Stdised_Key (PK)], AVG(Open_Price) AS Avg_Open, AVG(Close_Price) AS Avg_Close, AVG(Volume_Traded) AS Avg_Volume
+    query1 = f'''
+        SELECT [ISO_Stdised_Key (PK)] AS Crypto,
+            ROUND(AVG(Price_Differential), 2) AS Avg_Price_Differential,
+            ROUND(AVG(Change_pct), 4) AS Avg_Percent_Change
         FROM [dbo].[Crypto_Fact]
         GROUP BY [ISO_Stdised_Key (PK)]
+        ORDER BY Avg_Percent_Change DESC;
     '''
-    return json.dumps(database.get_sql_table(employee_overview_data))
+    
+    query2 = f'''
+        SELECT cf.[ISO_Stdised_Key (PK)] AS Crypto,
+            dd.Month_Date,
+            ROUND(SUM(cf.Volume_Traded), 0) AS Monthly_Volume
+        FROM [dbo].[Crypto_Fact] cf
+        JOIN [dbo].[Date_dim] dd ON cf.Date_ID = dd.Date_ID
+        GROUP BY cf.[ISO_Stdised_Key (PK)], dd.Month_Date
+        ORDER BY Crypto, dd.Month_Date;
+    '''
+    
+    queries = [query1, query2]
+    
+    return json.dumps([database.get_sql_table(q) for q in queries])
 
 @app.get("/data/manager")
 async def market_overview(response: Response, current_user: User = Depends(check_user_role("manager"))):
     response = add_cors_headers(response) 
     id = current_user.id    
-    manager_overview_data = f'''
-        SELECT Month_Date, AVG(Open_Price) AS Avg_Open, AVG(Close_Price) AS Avg_Close, AVG(High_Price) AS Avg_High,
-               AVG(Low_Price) AS Avg_Low, AVG(Volume_Traded) AS Avg_Volume
+    query3 = f'''
+        SELECT [ISO_Stdised_Key (PK)] AS Crypto,
+            ROUND(AVG(Price_variation), 2) AS Avg_Variation,
+            COUNT(*) AS Entry_Count
         FROM [dbo].[Crypto_Fact]
-        GROUP BY Month_Date
-        ORDER BY Month_Date
+        GROUP BY [ISO_Stdised_Key (PK)]
+        ORDER BY Avg_Variation DESC;
     '''
-    return json.dumps(database.get_sql_table(manager_overview_data))
+    
+    query4 = f'''
+        SELECT Price_Variation_Type,
+            COUNT(*) AS Frequency
+        FROM [dbo].[Crypto_Fact]
+        GROUP BY Price_Variation_Type;
+    '''
+    
+    queries = [query3, query4]
+    
+    return json.dumps([database.get_sql_table(q) for q in queries])
     
 # Running the app with Uvicorn
 if __name__ == "__main__":

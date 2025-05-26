@@ -156,7 +156,13 @@ class AzureDB:
                 
     def get_sql_table(self, query):
         
-        df = pd.read_sql_query(query, engine)
-        result = df.todict(orient='records')
+        try:
+            with engine.connect() as conn:
+                result = conn.execute(text(query))
+                columns = result.keys()
+                data = [dict(zip(columns, row)) for row in result.fetchall()]
+                return data
         
-        return result
+        except Exception as e:
+            print(f"Error in get_sql_table: {e}")
+            return []
